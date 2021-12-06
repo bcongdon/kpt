@@ -128,7 +128,7 @@ func ValidateFunctionImageURL(name string) error {
 	if err != nil {
 		return err
 	}
-	if !matched {
+	if !matched && !strings.HasPrefix(name, "http") {
 		return fmt.Errorf("function name %q is invalid", name)
 	}
 	return nil

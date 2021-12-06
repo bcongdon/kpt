@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 
 	"github.com/GoogleContainerTools/kpt/internal/printer"
 	"sigs.k8s.io/kustomize/kyaml/errors"
@@ -361,6 +362,7 @@ func (r *RunFns) defaultFnFilterProvider(spec runtimeutil.FunctionSpec, fnConfig
 		if err != nil {
 			return nil, err
 		}
+
 		c := &fnruntime.ContainerFn{
 			Path:            r.uniquePath,
 			Image:           spec.Container.Image,
@@ -376,8 +378,15 @@ func (r *RunFns) defaultFnFilterProvider(spec runtimeutil.FunctionSpec, fnConfig
 				AllowMount: true,
 			},
 		}
+
+		fmt.Println("got here")
+		runFn := c.Run
+		if strings.HasPrefix(spec.Container.Image, "http") {
+			runFn = fnruntime.HttpFnRunnerForContainer(c).Run
+		}
+
 		fltr = &runtimeutil.FunctionFilter{
-			Run:            c.Run,
+			Run:            runFn,
 			FunctionConfig: fnConfig,
 			DeferFailure:   spec.DeferFailure,
 		}
@@ -390,8 +399,12 @@ func (r *RunFns) defaultFnFilterProvider(spec runtimeutil.FunctionSpec, fnConfig
 			Args:     r.ExecArgs,
 			FnResult: fnResult,
 		}
+		runFn := e.Run
+		if strings.HasPrefix(spec.Container.Image, "http") {
+			runFn = fnruntime.HttpFnRunnerForExec(e).Run
+		}
 		fltr = &runtimeutil.FunctionFilter{
-			Run:            e.Run,
+			Run:            runFn,
 			FunctionConfig: fnConfig,
 			DeferFailure:   spec.DeferFailure,
 		}

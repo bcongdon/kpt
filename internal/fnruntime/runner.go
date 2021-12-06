@@ -62,8 +62,9 @@ func NewContainerRunner(
 		Ctx:             ctx,
 		FnResult:        fnResult,
 	}
+	runner := HttpFnRunnerForContainer(cfn).Run
 	fltr := &runtimeutil.FunctionFilter{
-		Run:            cfn.Run,
+		Run:            runner,
 		FunctionConfig: config,
 	}
 	return NewFunctionRunner(ctx, fltr, pkgPath, fnResult, fnResults, true, displayResourceCount)
