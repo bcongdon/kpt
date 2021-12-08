@@ -18,6 +18,7 @@ import (
 	"context"
 	goerrors "errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -38,6 +39,13 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
+var allowlistedFunctionBinaries = map[string]string{
+	"gcr.io/kpt-fn/apply-setters:v0.1":          "/apply-setters-v0.1",
+	"gcr.io/yakima-eap/generate-folders:latest": "/generate-folders-latest",
+	"gcr.io/kpt-fn/set-annotations:unstable":    "/set-annotations-unstable",
+	"gcr.io/kpt-fn/upsert-resource:v0.1":        "/upsert-resource-v0.1",
+}
+
 // NewContainerRunner returns a kio.Filter given a specification of a container function
 // and it's config.
 func NewContainerRunner(
@@ -55,15 +63,26 @@ func NewContainerRunner(
 		// Enable this once test harness supports filepath based assertions.
 		// Pkg: string(pkgPath),
 	}
-	cfn := &ContainerFn{
-		Path:            pkgPath,
-		Image:           f.Image,
-		ImagePullPolicy: imagePullPolicy,
-		Ctx:             ctx,
-		FnResult:        fnResult,
+
+	var runFn func(io.Reader, io.Writer) error
+	if binary, ok := allowlistedFunctionBinaries[f.Image]; ok {
+		efn := &ExecFn{
+			Path:     binary,
+			FnResult: fnResult,
+		}
+		runFn = efn.Run
+	} else {
+		return nil, fmt.Errorf("invalid function: %v", f.Image)
 	}
+	// cfn := &ContainerFn{
+	// 	Path:            pkgPath,
+	// 	Image:           f.Image,
+	// 	ImagePullPolicy: imagePullPolicy,
+	// 	Ctx:             ctx,
+	// 	FnResult:        fnResult,
+	// }
 	fltr := &runtimeutil.FunctionFilter{
-		Run:            cfn.Run,
+		Run:            runFn,
 		FunctionConfig: config,
 	}
 	return NewFunctionRunner(ctx, fltr, pkgPath, fnResult, fnResults, true, displayResourceCount)

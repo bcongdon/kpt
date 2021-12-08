@@ -122,10 +122,10 @@ func GetMain(ctx context.Context) *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&cmdutil.StackOnError, "stack-trace", false,
 		"Print a stack-trace on failure")
 
-	if _, err := exec.LookPath("git"); err != nil {
-		fmt.Fprintf(os.Stderr, "kpt requires that `git` is installed and on the PATH")
-		os.Exit(1)
-	}
+	// if _, err := exec.LookPath("git"); err != nil {
+	// 	fmt.Fprintf(os.Stderr, "kpt requires that `git` is installed and on the PATH")
+	// 	os.Exit(1)
+	// }
 
 	replace(cmd)
 
